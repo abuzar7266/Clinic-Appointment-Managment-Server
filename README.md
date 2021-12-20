@@ -1,10 +1,14 @@
 # Rental-Managment-System-REST-Server
 
 Express based RESTFul API Implemented based on Object Oriented Paradigms
+
 Completed: 
+
   1. Add Product
   2. Update Product
+
 To be added:
+
   3. Remove Product
   4. Book a Product
   5. Process Payment
