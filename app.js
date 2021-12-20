@@ -4,7 +4,8 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var session = require('express-session');
-var SampleRouter = require('./routes/EmployeeRouter');
+var addProduct = require('./routes/AddProductRouter');
+var updateProduct = require('./routes/UpdateProductRouter');
 var mongoose = require('mongoose');
 
 
@@ -35,7 +36,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(
   session({
-      secret: 'story book',
+      secret: 'ahsdjhasdhagsjdgajsdgjhagsdjhgasdhgajhsgdjhagsdhgasd',
       resave: false,
       saveUninitialized: false,
       store: MongoDbStore.create({
@@ -47,7 +48,8 @@ app.use(
   })
 );
 
-app.use('/',SampleRouter);
+app.use('/addProduct',addProduct);
+app.use('/updateProduct',updateProduct);
 //----------------------
 //Deploy Routers here
 //----------------------

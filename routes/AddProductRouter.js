@@ -1,54 +1,35 @@
 var express = require('express');
-const { Store } = require('./classes/classes');
+const ESSerializer = require('esserializer');
+var ProductDescript = require('../models/ProductDescription');
+const { MongoDB,AddProductHandler,ProductDescription,Product,PersistenceHandler,PeristenceFactory } = require('./classes/class');
 var mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const { session } = require('passport');
+const { Store } = require('express-session');
 var Router = express.Router();
-Router.use(bodyParser.json());
-Router.route('/verifyProduct')
+Router.route('/initiate')
     .post(function(req,res,next){
-        let msg = req.session.store.verifyProduct(req.body.productID);
-        msg.then((response)=>{
-                req.session.product = response;
-                req.session.productID = req.body.productID
-                res.setHeader('Content-Type', 'application/json');
-                res.json(response);
-        });
+        var handler = new AddProductHandler();
+        handler.initiateAddProduct();
+        req.session.handler = ESSerializer.serialize(handler);
+        res.send('Initiate');
     });
-Router.route('/initiateAddProduct')
-    .post(function(req,res,next){
-        let msg = req.session.store.initiateAddProduct(req.session.productID);
-        msg.then((response)=>{
-                res.statusCode = 200;
-                res.setHeader('Content-Type', 'application/json');
-                res.json(response);
-        });
+Router.route('/set')
+    .post(function(req,res,next)
+    {
+        var handler = ESSerializer.deserialize(req.session.handler,[AddProductHandler,ProductDescription,Product,PersistenceHandler,PeristenceFactory,MongoDB]);
+        handler.setProductDetails(req.body.Quantity,req.body.Description);
+        req.session.handler = ESSerializer.serialize(handler);
+        res.send('Set');
     });
-Router.route('/setProduct')
-    .post(function(req,res,next){
-        let msg = req.session.store.setProduct(req.body.productDetails);
-        msg.then((response)=>{
-                res.statusCode = 200;
-                res.setHeader('Content-Type', 'application/json');
-                res.json(response);
-        });
-    });
-Router.route('/setProductDescription')
-    .post(function(req,res,next){
-        let msg = req.session.store.setProductDescription(req.body.productDescription);
-        msg.then((response)=>{
-                res.statusCode = 200;
-                res.setHeader('Content-Type', 'application/json');
-                res.json(response);
-        });
-    });
-Router.route('/confirmAddProduct')
-    .post(function(req,res,next){
-        let msg = req.session.store.confirmAddProduct();
-        msg.then((response)=>{
-                res.statusCode = 200;
-                res.setHeader('Content-Type', 'application/json');
-                res.json(response);
-        });
+Router.route('/confirm')
+    .post(function(req,res,next)
+    {
+        var handler = ESSerializer.deserialize(req.session.handler,[AddProductHandler,ProductDescription,Product,PersistenceHandler,PeristenceFactory,MongoDB]);
+        var data = handler.confirmAddProduct();
+        data.then((msg)=>{
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(msg);
+        })
     });
 module.exports = Router;
