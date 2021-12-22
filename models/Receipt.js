@@ -23,7 +23,7 @@ var Receipt = new Schema({
     },
     PaymentID:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:'Paymet'
+        ref:'Payment'
     },
     ProductID:{
         type:mongoose.Schema.Types.ObjectId,
