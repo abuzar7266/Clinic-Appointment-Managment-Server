@@ -49,9 +49,8 @@ class MongoDB extends PersistenceHandler{
     createProductDescription(pid,des){
         return DescriptionModel.create({ProductId:pid,Name:des.name,category:des.category,rentCharges:des.rentCharges,maxDayLimit:des.maxDayLimit,fineCharges:des.finePerDay,instruction:des.instructions,thumbnail:des.thumbnail});
     }
-    fetchProduct = async (id)=>{
-        let result = await ProductModel.findById(id);
-        return result;
+    fetchProduct(id){
+        return ProductModel.findById(id);
     }
     fetchProductDescription = async (id) => {
         const des = await DescriptionModel.find({ProductId:id});
@@ -95,6 +94,11 @@ class Store
     constructor()
     {
         PeristenceFactory.createInstance('MongoDB');
+        this.Product = new Product();
+        this.Customer = new Customer();
+        this.StoreNo = 1;
+        this.Challan = null;
+        this.Booking = new Booking();
     }
     init(){
         this.Product = new Product();
@@ -163,26 +167,21 @@ class Store
     initiateBooking(custId){
         this.Booking.setCustomer(custId);
     }
-    setBooking = async(pid,quantity,days)=>
-    {
-        var status = await this.Booking.setProduct(pid);
-        /*if(status)
-        {
-            status = this.Booking.setRequiredQuantity(quantity);  
-            if(status)
-            {
-                status = this.Booking.calculateRent(days);
-                return {status,bookingDetails:this.Booking};
-            }
-            else
-            {
-                return {status:status,error:'NOT ENOUGH QUANTITY'};
-            }
-        }
-        else
-        {
-            return {status:status,error:'PRODUCT IS UNAVAILABLE AT THE MOMENT'};
-        }*/
+    setBookingProduct = async (pid)=>{
+        var x = await this.Booking.setProduct(pid);
+        return this.Booking;
+    }
+    setBookingProductDescription(pid){
+        this.Product.setProductDescription(pid);
+    }
+    setBookingProductQuantity(quantity){
+
+    }
+    setBookingDays(days){
+
+    }
+    getBookingDetails(){
+
     }
     confirmBooking()
     {
@@ -202,11 +201,11 @@ class Booking
     constructor()
     {
         this.BookingStatus = 'INVALID';
-        this.TotalRent = null;
-        this.BookingDate = null;
-        this.Quantity = null;
-        this.customerId = null;
-        this.ProductId = null;
+        this.TotalRent = '';
+        this.BookingDate = '';
+        this.Quantity = '';
+        this.customerId = '';
+        this.ProductId = '';
         this.Product = new Product();
     }
     setCustomer(custId){
@@ -247,18 +246,10 @@ class Booking
     }
     setProduct = async (pid)=>
     {
-        var x = await this.Product.setProduct(pid);
-        //var y = await this.Product.setProductDescription(pid);
-        //this.ProductId = this.Product.ProductID;
-        /*if(this.ProductId){
-            this.BookingStatus = 'FETCHED';
-            return {status:true};
-        }
-        else{
-            this.ProductId = null;
-            this.BookingStatus = 'UNAVAILABLE';
-            return {status:false};
-        }*/
+        var y = await this.Product.setProduct(pid);
+        console.log(y);
+        this.Product.ProductID = String(y._id);
+        this.Product.Quantity = y.Quantity;
     }
 }
 class Challan{
@@ -364,7 +355,7 @@ class Customer
 }
 class Product{
     constructor(){
-        this.ProductID = null;
+        this.ProductID = 'NULL';
         this.Quantity = 0;
         this.ProductDescription = new ProductDescription();
     }
@@ -396,14 +387,10 @@ class Product{
     getID(){
         return this.ProductID;
     }
-    setProduct(ID)
+    setProduct = async (ID)=>
     {
         const db = PeristenceFactory.getDB();
-        var x = db.fetchProduct(ID);
-        x.then((res)=>{
-            this.ProductID = res._id;
-            this.Quantity = res.Quantity;
-        })
+        var x = await db.fetchProduct(ID);
         return x;
     }
     setProductDescription(ID)

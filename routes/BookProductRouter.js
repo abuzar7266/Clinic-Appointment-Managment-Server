@@ -8,7 +8,6 @@ var Router = express.Router();
 Router.route('/verifyCustomer')
     .post(function(req,res,next){
         var handler = new Store();
-        handler.init();
         var re = handler.verifyCustomer(req.body.CustomerDetail);
         req.session.handler = ESSerializer.serialize(handler);
         re.isCust.then((response)=>{
@@ -22,7 +21,8 @@ Router.route('/verifyCustomer')
                     res.json({isBlackList:false,isCustomer:true,customer:customer});
                 });
             }
-            else{
+            else
+            {
                 re.isBlacked.then((black)=>{
                     if(black.length!=0){
                         res.statusCode = 501;
@@ -41,29 +41,25 @@ Router.route('/verifyCustomer')
 Router.route('/initiate')
     .post(function(req,res,next)
     {
-        var handler = ESSerializer.deserialize(req.session.handler,[Blacklist,Customer,Booking,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,MongoDB]);
+        var handler = new Store();//ESSerializer.deserialize(req.session.handler,[Blacklist,Customer,Booking,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,MongoDB]);
         handler.initiateBooking(req.body.customerId);
         req.session.handler = ESSerializer.serialize(handler);
         res.send('Set');
     });
-    var Savesession = async function(req,handler){
-        req.session.handler = ESSerializer.serialize(handler);
-    }
 Router.route('/setProduct')
-    .post(async function(req,res,next)
+    .post( async function(req,res,next)
     {
         var handler = ESSerializer.deserialize(req.session.handler,[Blacklist,Customer,Booking,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,MongoDB]);
-        var x = await handler.setBooking(req.body.pid,req.body.quantity,req.body.days);
-        await Savesession(req,handler);
-       console.log(handler);
-        //req.session.handler = ESSerializer.serialize(handler);
+        await handler.setBooking(req.body.pid,req.body.quantity,req.body.days);
+        req.session.handler = ESSerializer.serialize(handler);
         res.send('Hi');
     });
-    Router.route('/get')
+Router.route('/get')
     .post(function(req,res,next){
         var handler = ESSerializer.deserialize(req.session.handler,[Blacklist,Customer,Booking,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,MongoDB]);
         console.log(handler);
         res.send('Hi');
+        req.session.handler = ESSerializer.serialize(handler);
     });
 Router.route('/confirm')
     .post(function(req,res,next){
