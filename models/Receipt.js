@@ -2,47 +2,53 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var Receipt = new Schema({
-    receiptType:{
-        type:String,
-        required:true
-    }
-});
-var RentReceipt = new Schema({
-    receiptId:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref:'Receipt'
+    Type:{
+        type:String
     },
     BookingID:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Booking'
-    }
-});
-
-var ComplaintReceipt = new Schema({
-    receiptId:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref:'Receipt'
     },
-    ComplaintID:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref:'Complaint'
-    }
-});
-
-var ReturnReceipt = new Schema({
-    receiptId:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref:'Receipt'
+    RentID:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Rent'
     },
     ReturnID:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Return'
+    },
+    ComplaintID:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Receipt'
+    },
+    PaymentID:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Paymet'
+    },
+    ProductID:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Product'
+    },
+    Subject:{
+        type:String
+    },
+    Complaint:{
+        type:String
+    },
+    TotalAmount:{
+        type:Number
+    },
+    Days:{
+        type:Number
+    },
+    Quantity:{
+        type:Number
+    },
+    Date:{
+        type:Date,
+        default:Date.now()
     }
+
 });
 
-module.exports = {
-    Receipt:mongoose.model('ProductCatalogue', ProductCatalogue),
-    RentReceipt:mongoose.model('RentReceipt', RentReceipt),
-    ComplaintReceipt:mongoose.model('ComplaintReceipt', ComplaintReceipt),
-    ReturnReceipt:mongoose.model('ReturnReceipt', ReturnReceipt)
-}
+module.exports = mongoose.model('Receipt', Receipt);

@@ -2,16 +2,28 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var Challan = new Schema({
     Type:{
-        type:String
+        type:String,
+        required:true
+    },
+    BookingID:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Booking'
+    },
+    ReturnID:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Return'
     },
     total:{
-        type:String
+        type:Number
     },
     DueDate:{
         type:Date,
         default:Date.now()
+    },
+    Status:{
+        type:String,
+        default:'ISSUED'
     }
-});
 
-Challan.plugin(passportLocalMongoose);
+});
 module.exports = mongoose.model('Challan', Challan);

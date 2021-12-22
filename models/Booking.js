@@ -12,6 +12,19 @@ var Booking = new Schema({
     BookingDate:{
         type:Date,
         default:Date.now()
+    },
+    TotalRent:{
+       type:Number
+    },
+    Status:{
+        type:String,
+        default:'BOOKED'
+    },
+    Days:{
+        type:Number
+    },
+    Quantity:{
+        type:Number
     }
 });
 

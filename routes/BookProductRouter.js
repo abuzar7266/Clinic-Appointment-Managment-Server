@@ -1,7 +1,7 @@
 var express = require('express');
 const ESSerializer = require('esserializer');
 var ProductDescript = require('../models/ProductDescription');
-const { Blacklist,Customer,MongoDB,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,Booking } = require('./classes/class');
+const { Receipt,BookingReceipt,BookingChallan,Challan,FineChallan,Blacklist,Customer,MongoDB,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,Booking } = require('./classes/class');
 var mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 var Router = express.Router();
@@ -49,23 +49,28 @@ Router.route('/initiate')
 Router.route('/setProduct')
     .post( async function(req,res,next)
     {
-        var handler = ESSerializer.deserialize(req.session.handler,[Blacklist,Customer,Booking,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,MongoDB]);
-        await handler.setBooking(req.body.pid,req.body.quantity,req.body.days);
+        var handler = ESSerializer.deserialize(req.session.handler,[Receipt,BookingReceipt,BookingChallan,Challan,FineChallan,Blacklist,Customer,MongoDB,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,Booking]);
+        var x = await handler.setBooking(req.body.pid,req.body.quantity,req.body.days);
         req.session.handler = ESSerializer.serialize(handler);
         res.send('Hi');
-    });
-Router.route('/get')
-    .post(function(req,res,next){
-        var handler = ESSerializer.deserialize(req.session.handler,[Blacklist,Customer,Booking,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,MongoDB]);
-        console.log(handler);
-        res.send('Hi');
-        req.session.handler = ESSerializer.serialize(handler);
     });
 Router.route('/confirm')
-    .post(function(req,res,next){
-        var handler = ESSerializer.deserialize(req.session.handler,[Blacklist,Customer,Booking,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,MongoDB]);
-        console.log(handler);
+    .post(async function(req,res,next){
+        var handler = ESSerializer.deserialize(req.session.handler,[Receipt,BookingReceipt,BookingChallan,Challan,FineChallan,Blacklist,Customer,MongoDB,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,Booking]);
+        await handler.confirmBooking();
         req.session.handler = ESSerializer.serialize(handler);
         res.send('Hi');
+    });
+Router.route('/generateChallan')
+    .post(function(req,res,next){
+        var handler = ESSerializer.deserialize(req.session.handler,[Receipt,BookingReceipt,BookingChallan,Challan,FineChallan,Blacklist,Customer,MongoDB,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,Booking]);
+        req.session.handler = ESSerializer.serialize(handler);
+        res.json(handler.Booking.Challan);
+    });
+Router.route('/generateReceipt')
+    .post(function(req,res,next){
+        var handler = ESSerializer.deserialize(req.session.handler,[Receipt,BookingReceipt,BookingChallan,Challan,FineChallan,Blacklist,Customer,MongoDB,Store,ProductDescription,Product,PersistenceHandler,PeristenceFactory,Booking]);
+        req.session.handler = ESSerializer.serialize(handler);
+        res.json(handler.Booking.Receipt)
     });
 module.exports = Router;

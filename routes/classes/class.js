@@ -3,6 +3,9 @@ var ProductModel  = require('../../models/Product');
 var CustomerModel = require('../../models/Customer');
 var BlacklistModel = require('../../models/Blacklist');
 var DescriptionModel = require('../../models/ProductDescription');
+var BookingModel = require('../../models/Booking');
+var ChallanModel = require('../../models/Challan');
+var ReceiptModel = require('../../models/Receipt');
 var express = require('express');
 var mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -33,7 +36,8 @@ class PersistenceHandler{
         console.log('None')
     }
 }
-class MongoDB extends PersistenceHandler{
+class MongoDB extends PersistenceHandler
+{
     constructor(){
         super();
     }
@@ -49,8 +53,9 @@ class MongoDB extends PersistenceHandler{
     createProductDescription(pid,des){
         return DescriptionModel.create({ProductId:pid,Name:des.name,category:des.category,rentCharges:des.rentCharges,maxDayLimit:des.maxDayLimit,fineCharges:des.finePerDay,instruction:des.instructions,thumbnail:des.thumbnail});
     }
-    fetchProduct(id){
-        return ProductModel.findById(id);
+    fetchProduct = async (id)=>{
+        let result = await ProductModel.findById(id);
+        return result;
     }
     fetchProductDescription = async (id) => {
         const des = await DescriptionModel.find({ProductId:id});
@@ -84,6 +89,18 @@ class MongoDB extends PersistenceHandler{
             city:detail.city,street:detail.street,postalCode:detail.postalCode,dateOfBirth:detail.
             dateOfBirth,phoneNo:detail.phoneNo});
         return res;
+    }
+    storeBooking = async (CustomerID,ProductID,BookingDate,TotalRent,Days,Quantity)=>{
+        var status = await BookingModel.create({CustomerID:CustomerID,ProductID:ProductID,BookingDate:BookingDate,TotalRent:TotalRent,Quantity,Quantity});
+        return {status:true,_id:String(status._id)};
+    } 
+    createBookingChallan = async (Type,BookingID,total,DueDate)=>{
+        var status = await ChallanModel.create({Type:Type,BookingID:BookingID,total:total,DueDate:DueDate});
+        return {status:true,_id:String(status._id),Issued:(status.Status)};
+    }
+    createBookingReceipt = async (Type,BookingID,ProductID,TotalAmount,Days,Quantity)=>{
+        var status = await ReceiptModel.create({Type:Type,BookingID:BookingID,ProductID:ProductID,TotalAmount:TotalAmount,Days:Days,Quantity:Quantity});
+        return {status:true,_id:String(status._id)};
     }
 }
 
@@ -167,25 +184,51 @@ class Store
     initiateBooking(custId){
         this.Booking.setCustomer(custId);
     }
-    setBookingProduct = async (pid)=>{
-        var x = await this.Booking.setProduct(pid);
-        return this.Booking;
-    }
-    setBookingProductDescription(pid){
-        this.Product.setProductDescription(pid);
-    }
-    setBookingProductQuantity(quantity){
-
-    }
-    setBookingDays(days){
-
-    }
-    getBookingDetails(){
-
-    }
-    confirmBooking()
+    setBooking = async (pid,quantity,days)=>
     {
-        //console.log(this.Booking);
+        var status = await this.Booking.setProduct(pid);
+        if(status)
+        {
+            status = await this.Booking.setRequiredQuantity(quantity);  
+            if(status)
+            {
+                status = await this.Booking.calculateRent(days);
+                return {status,bookingDetails:this.Booking};
+            }
+            else
+            {
+                return {status:status,error:'NOT ENOUGH QUANTITY'};
+            }
+        }
+        else
+        {
+            return {status:status,error:'PRODUCT IS UNAVAILABLE AT THE MOMENT'};
+        }
+    }
+    confirmBooking = async () =>
+    {
+        if(this.Booking.BookingStatus!=='PRODUCT_UPDATED'){
+            var status = await this.Booking.updateProductAvailability();
+            if(status){
+                this.Booking.BookingStatus = 'PRODUCT_UPDATED';
+                status = await this.Booking.SubmitBooking();
+                if(status.status){
+                    this.Booking.BookingStatus = 'BOOKING_CONFIRMED';
+                    status = await this.Booking.makeChallan();
+                    if(status.status){
+                        console.log(this.Booking.Challan);
+                        status = await this.Booking.makeReceipt();
+                    }
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else{
+            console.log('BOOKING IS ALREADY PLACED');
+        }
     }
     generateBookingChallan(){
 
@@ -201,22 +244,66 @@ class Booking
     constructor()
     {
         this.BookingStatus = 'INVALID';
-        this.TotalRent = '';
-        this.BookingDate = '';
-        this.Quantity = '';
-        this.customerId = '';
-        this.ProductId = '';
+        this.TotalRent = null;
+        this.BookingDate = null;
+        this.Quantity = null;
+        this.days = null;
+        this.customerId = null;
         this.Product = new Product();
+        this.Challan = null;
+        this.bookingId = null;
+        this.Receipt = null;
     }
     setCustomer(custId){
         console.log('Initiated');
         this.customerId = custId;
     }
-    setRequiredQuantity(quantity)
+    SubmitBooking = async ()=>{
+        const db = PeristenceFactory.getDB();
+        var status = await db.storeBooking(this.customerId,this.Product.ProductID,this.BookingDate,this.TotalRent,this.days,this.Quantity);
+        if(status.status)
+        {
+            this.bookingId = status._id;
+            return {status:true};
+        }
+        else
+        {
+            return {status:false,error:"ERROR IN UPLOADING"};
+        }
+    }
+    makeChallan = async ()=>{
+       this.Challan = new BookingChallan();
+       const date = new Date(Date.now()+(3600 * 1000 * 24));
+       this.Challan.setChallan(this.bookingId,this.TotalRent,date);
+       var status = await this.Challan.storeInDB();
+       if(status.status)
+       {
+           this.BookingStatus = 'CHALLAN CREATED';
+           return status;
+       }
+       else
+       {
+            this.BookingStatus = 'FAILED TO CREATE CHALLAN';
+            return status;
+       }
+    }
+    makeReceipt = async () =>{
+        this.Receipt = new BookingReceipt();
+        this.Receipt.setReceipt(this.bookingId,this.Product.getID(),this.TotalRent,this.days,this.Quantity);
+        var status = await this.Receipt.storeInDB();
+        if(status.status){
+        this.Receipt.__receiptID = status._id;
+        return status;
+        }
+        else{
+            return {status:false,error:"RECEIPT FAILED"};
+        }
+    }
+    setRequiredQuantity = async (quantity)=>
     {
             if(quantity>this.Product.Quantity)
             {
-                return {status:false};
+                return {status:false,error:'NOT ENOUGH SUPPLIES'};
             }
             else
             {
@@ -225,17 +312,20 @@ class Booking
                 return {status:true};
             }
     }
-    updateProductAvailability(){
-        return this.Product.updateAvailability(this.Quantity);
+    updateProductAvailability = async ()=>{
+        let x = await this.Product.updateAvailability(this.Quantity);
+        return x;
     }
-    calculateRent(days)
+    calculateRent = async (days)=>
     {
         if(this.BookingStatus=='QUANTITY SET'){
-            var RentCharges = this.Product.getRentCharges();
-            var maxDays = this.Product.getMaxDaysLimit();
+            var RentCharges = await this.Product.getRentCharges();
+            var maxDays = await this.Product.getMaxDaysLimit();
             if(days<=maxDays){
+                this.days = days;
                 this.TotalRent = this.Quantity * RentCharges * days;
                 this.BookingStatus='TOTAL';
+                this.BookingDate = new Date().toISOString();
                 return {status:true,TotalRent:this.TotalRent};
             }
             else{
@@ -246,10 +336,11 @@ class Booking
     }
     setProduct = async (pid)=>
     {
-        var y = await this.Product.setProduct(pid);
-        console.log(y);
-        this.Product.ProductID = String(y._id);
-        this.Product.Quantity = y.Quantity;
+        var x = await this.Product.setProduct(pid);
+        this.Product.ProductID = String(x._id);
+        this.Product.Quantity = x.Quantity;
+        var y = await this.Product.setProductDescription(pid);
+        return {status:true};
     }
 }
 class Challan{
@@ -258,6 +349,7 @@ class Challan{
         this.__amountDue = null;
         this.__dueDate = null; 
         this.__Type = 'CHALLAN';
+        this.__Status = 'UNDEFINED';
     }
     setChallanId(id){
         this.__ChallanID = id;
@@ -283,9 +375,19 @@ class BookingChallan extends Challan{
     setChallan(bookingId,amountDue,dueDate){
         super.setChallan(amountDue,dueDate,'BOOKING');
         this.__bookingId = bookingId;
+        super.setChallanType('BOOKING');
     }
-    storeInDB(){
-        
+    storeInDB = async () => {
+        let db = PeristenceFactory.getDB();
+        var status = await db.createBookingChallan(this.__Type,this.__bookingId,this.__amountDue,this.__dueDate);
+        if(status.status){
+            this.__ChallanID =status._id;
+            this.__Status = status.Issued;
+            return {status:true};
+        }
+        else{
+            return {status:false,error:'CHALLAN CREATION FAILED'};
+        }
     }
 }
 class FineChallan extends Challan{
@@ -299,6 +401,41 @@ class FineChallan extends Challan{
     }
     storeInDB(){
 
+    }
+}
+
+class Receipt {
+    constructor(){
+        this.__receiptID = null;
+        this.__Type = null;
+    }
+    setReceipt(type){
+        this.__Type = type;
+    }
+}
+class BookingReceipt extends Receipt{
+    constructor(){
+        super();
+        this.bookingId = null;
+        this.productId - null;
+        this.quantity = null;
+        this.total = null;
+        this.days = null;
+    }
+    setReceipt(bid,pid,qty,total,days){
+        super.setReceipt('BOOKING');
+        this.bookingId = bid;
+        this.quantity = qty;
+        this.total = total;
+        this.days = days;
+        this.productId = pid;
+    }
+    storeInDB = async () => {
+        let db = PeristenceFactory.getDB();
+        var status = await db.createBookingReceipt(this.type,this.bookingId,
+            this.productId,this.total,this.days,this.quantity);
+            this.__receiptID = status._id;
+            return status;
     }
 }
 class Blacklist{
@@ -355,14 +492,14 @@ class Customer
 }
 class Product{
     constructor(){
-        this.ProductID = 'NULL';
+        this.ProductID = null;
         this.Quantity = 0;
         this.ProductDescription = new ProductDescription();
     }
-    updateAvailability(quantity){
+    updateAvailability = async (quantity)=>{
         const db = PeristenceFactory.getDB();
         if(this.Quantity-quantity>=0){
-            db.updateProduct(this.ProductID,this.Quantity-quantity);
+            await db.updateProduct(this.ProductID,this.Quantity-quantity);
             return {status:true};
         }
         else{
@@ -376,12 +513,12 @@ class Product{
     setID(id){
         this.ProductID = id;
     }
-    getRentCharges(){
-        var value = this.ProductDescription.getRentCharges();
+    getRentCharges = async ()=>{
+        var value = await this.ProductDescription.getRentCharges();
         return value;
     }
-    getMaxDaysLimit(){
-        var max = this.ProductDescription.getMaxDays();
+    getMaxDaysLimit = async ()=>{
+        var max = await this.ProductDescription.getMaxDays();
         return max;
     }
     getID(){
@@ -390,19 +527,18 @@ class Product{
     setProduct = async (ID)=>
     {
         const db = PeristenceFactory.getDB();
-        var x = await db.fetchProduct(ID);
+        var x = db.fetchProduct(ID);
         return x;
     }
-    setProductDescription(ID)
+    setProductDescription = async (ID)=>
     {
-        this.ProductDescription.getProductDescription(ID);
+        await this.ProductDescription.getProductDescription(ID);
     } 
     confirmAddProduct(){
         const db = PeristenceFactory.getDB();
         var res = db.addNewProduct(this.Quantity);
-        console.log('res:'+res);
         res.then((response)=>{
-            this.productID = response._id;
+            this.ProductID = response._id;
             var res2 = this.ProductDescription.confirmProductDescription(response._id);
         })
         return res;
@@ -428,10 +564,10 @@ class ProductDescription{
         this.instructions = '?';
         this.thumbnail = '?';
     }
-    getMaxDays(){
+    getMaxDays = async ()=>{
         return this.maxDayLimit;
     }
-    getRentCharges(){
+    getRentCharges = async ()=>{
         return this.rentCharges;
     }
     setProductDescription(Description){
@@ -520,11 +656,16 @@ class Employee{
 
 module.exports = {
     Store:Store,
+    Receipt:Receipt,
+    BookingReceipt:BookingReceipt,
     MongoDB:MongoDB,
     Blacklist:Blacklist,
     Product:Product,
     Booking:Booking,
     Customer:Customer,
+    Challan:Challan,
+    BookingChallan:BookingChallan,
+    FineChallan:FineChallan,
     ProductDescription:ProductDescription,
     PeristenceFactory:PeristenceFactory,
     PersistenceHandler:PersistenceHandler
