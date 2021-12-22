@@ -6,6 +6,8 @@ var logger = require('morgan');
 var session = require('express-session');
 var addProduct = require('./routes/AddProductRouter');
 var updateProduct = require('./routes/UpdateProductRouter');
+var removeProduct = require('./routes/RemoveProductRouter');
+var bookProduct = require('./routes/BookProductRouter');
 var mongoose = require('mongoose');
 
 
@@ -50,6 +52,8 @@ app.use(
 
 app.use('/addProduct',addProduct);
 app.use('/updateProduct',updateProduct);
+app.use('/removeProduct',removeProduct);
+app.use('/bookProduct',bookProduct);
 //----------------------
 //Deploy Routers here
 //----------------------

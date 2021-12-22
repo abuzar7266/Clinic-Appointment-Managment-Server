@@ -3,30 +3,33 @@ var Schema = mongoose.Schema;
 var Customer = new Schema({
     CNIC:{
         type: String,
+        unique:true,
+        required:true
     },
-    Country:{
+    nationality:{
         type:String
     },
-    City:{
+    city:{
         type:String
     },
-    Street:{
+    street:{
         type:String
     },
-    PostalCode:{
+    postalCode:{
         type:String
     },
-    FirstName:{
+    name:{
         type:String
     },
-    LastName:{
+    dateOfBirth:{
         type:String
     },
-    DOB:{
+    phoneNo:{
         type:String
     },
-    MobileNo:{
-        type:String
+    status:{
+        type:String,
+        default:'VALID'
     }
 });
 module.exports = mongoose.model('Customer', Customer);
