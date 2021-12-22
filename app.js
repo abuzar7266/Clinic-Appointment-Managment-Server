@@ -9,6 +9,7 @@ var updateProduct = require('./routes/UpdateProductRouter');
 var removeProduct = require('./routes/RemoveProductRouter');
 var bookProduct = require('./routes/BookProductRouter');
 var launchComplaint = require('./routes/LaunchComplaintRouter');
+var viewComplaint = require('./routes/ViewComplaintRouter');
 var mongoose = require('mongoose');
 
 
@@ -56,6 +57,7 @@ app.use('/updateProduct',updateProduct);
 app.use('/removeProduct',removeProduct);
 app.use('/bookProduct',bookProduct);
 app.use('/launchComplaint',launchComplaint);
+app.use('/viewComplaint',viewComplaint);
 //----------------------
 //Deploy Routers here
 //----------------------

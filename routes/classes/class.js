@@ -103,13 +103,21 @@ class MongoDB extends PersistenceHandler
         var status = await ReceiptModel.create({Type:Type,BookingID:BookingID,ProductID:ProductID,TotalAmount:TotalAmount,Days:Days,Quantity:Quantity});
         return {status:true,_id:String(status._id)};
     }
+    createComplaintReceipt = async (Type,ComplaintID,Subject,Complaint)=>{
+        var status = await ReceiptModel.create({Type:Type,ComplaintID:ComplaintID,Subject:Subject,Complaint:Complaint});
+        return {status:true,_id:String(status._id)};
+    }
     fetchReceipt = async (id)=>{
-        var status = await ReceiptModel.findById(id);
+        var status = await ReceiptModel.findById(id).populate('ReceiptID');
         return {status:true,receipt:status}; 
     }
     storeNewComplaint = async (receiptId,subject,complaint)=>{
         var status = await ComplaintModel.create({ReceiptID:receiptId,Subject:subject,Complaint:complaint});
         return {status:true,complaint:status};
+    }
+    fetchComplaintList = async ()=>{
+        var status = await ComplaintModel.find({});
+        return status;
     }
 }
 
@@ -125,7 +133,7 @@ class Store
         this.StoreNo = 1;
         this.Challan = null;
         this.Booking = new Booking();
-        this.Complaint = null;
+        this.Complaint = new Complaint();
         this.Receipt = new Receipt();
     }
     init(){
@@ -261,8 +269,18 @@ class Store
     }
     SubmitNewComplaint = async ()=>{
         var response  = await this.Complaint.LaunchNewComplaint();
-        console.log(response);
-        //return response;
+        var status = await this.Complaint.makeComplaintReceipt(); 
+        return response;
+    }
+    generateComplaintReceipt(){
+        return this.Complaint.getReceipt();
+    }
+
+    //View Complaint
+
+    getComplaintList = async ()=>{
+        var status = await this.Complaint.getComplaintList();
+        return status;
     }
 }
 
@@ -437,6 +455,7 @@ class Complaint
         this.Subject = null;
         this.complaint = null;
         this.ComplaintID = null;
+        this.Date = null;
         this.ComplaintReceipt = null;
     }
     setVerifiedReceiptId(id){
@@ -445,6 +464,9 @@ class Complaint
     setComplaint(subject,complaint){
         this.Subject = subject;
         this.complaint = complaint;
+    }
+    getReceipt(){
+        return this.ComplaintReceipt;
     }
     LaunchNewComplaint = async ()=>{
           var db = PeristenceFactory.getDB();
@@ -456,6 +478,18 @@ class Complaint
           else{
               return {status:false,error:'Launch Complaint Failed!'};
           }
+    }
+    getComplaintList = async ()=>{
+        var db = PeristenceFactory.getDB();
+        var status = await db.fetchComplaintList();
+        return status;
+    }
+    makeComplaintReceipt = async ()=>{
+        this.ComplaintReceipt = new ComplaintReceipt();
+        this.ComplaintReceipt.setReceipt(this.ComplaintID,this.Subject,this.complaint);
+        var status = await this.ComplaintReceipt.createReceipt();
+        this.Date = new Date
+        return status;
     }
 }
 class Receipt {
@@ -508,8 +542,7 @@ class ComplaintReceipt extends Receipt{
         this.complaintId = null;
         this.subject = null;
         this.complaint = null;
-        this.receiptId = null;
-        this.receiptType = null;
+        this.Date = null;
     }
     setReceipt(complaintId,subject,complaint){
         super.setReceipt('COMPLAINT');
@@ -517,8 +550,16 @@ class ComplaintReceipt extends Receipt{
         this.subject = subject;
         this.complaint = complaint;
     }
-    storeInDB(){
-
+    createReceipt = async ()=>{
+        let db = PeristenceFactory.getDB();
+        var status = await db.createComplaintReceipt(this.receiptType,this.complaintId,this.subject,this.complaint);
+        if(status.status){    
+            this.Date = new Date(Date.now());
+            this.__receiptID = status._id;
+            return {status:true};
+        }else{
+            return {status:false,error:'COMPLAINT RECEIPT CREATE FAILED'};
+        }
     }
 }
 class Blacklist{
@@ -741,6 +782,7 @@ module.exports = {
     Store:Store,
     Receipt:Receipt,
     Complaint:Complaint,
+    ComplaintReceipt:ComplaintReceipt,
     BookingReceipt:BookingReceipt,
     MongoDB:MongoDB,
     Blacklist:Blacklist,
