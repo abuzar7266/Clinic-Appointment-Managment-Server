@@ -1,17 +1,20 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var Return = new Schema({
-    ReceiptID:{
+    RentID:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:'Receipt'
+        ref:'Rent'
     },
-    ProductID:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'Product'
+    Fine:{
+        type:Number
     },
-    ReturnDate:{
+    CollectionDate:{
         type:Date,
         default:Date.now()
+    },
+    Status:{
+        type:String,
+        default:'CONFIRMED'
     }
 });
 

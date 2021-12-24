@@ -2,29 +2,25 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var Ledger = new Schema({
-    number:{
-        type:String
-    }
-});
-
-var LedgerRecord = new Schema({
-    LedgerId:{
+    PaymentID:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:'Ledger'
+        ref:'Payment'
     },
     total:{
-        type:String
+        type:Number,
+        required:true
     },
     paid:{
-        type:String
+        type:Number,
+        required:true
     },
-    PaidOnDate:{
-        type:String
+    Date:{
+        type:Date,
+        default:Date.now()
     },
     returnAmount:{
-        type:String
+        type:Number,
+        required:true
     }
 });
-
-Ledger.plugin(passportLocalMongoose);
-module.exports = mongoose.model('Ledger', FineChallan);
+module.exports = mongoose.model('Ledger', Ledger);

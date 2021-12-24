@@ -10,6 +10,11 @@ var removeProduct = require('./routes/RemoveProductRouter');
 var bookProduct = require('./routes/BookProductRouter');
 var launchComplaint = require('./routes/LaunchComplaintRouter');
 var viewComplaint = require('./routes/ViewComplaintRouter');
+var makePayment = require('./routes/makePaymentRouter');
+var rentProduct = require('./routes/RentProductRouter');
+var returnProduct = require('./routes/ReturnProduct');
+var productCatalogue = require('./routes/BrowseCatalogueRouter');
+var sessionRouter = require('./routes/SessionRouter');
 var mongoose = require('mongoose');
 
 
@@ -51,13 +56,17 @@ app.use(
       }
   })
 );
-
+app.use('/',sessionRouter);
 app.use('/addProduct',addProduct);
 app.use('/updateProduct',updateProduct);
 app.use('/removeProduct',removeProduct);
 app.use('/bookProduct',bookProduct);
 app.use('/launchComplaint',launchComplaint);
 app.use('/viewComplaint',viewComplaint);
+app.use('/makePayment',makePayment);
+app.use('/rentProduct',rentProduct);
+app.use('/returnProduct',returnProduct);
+app.use('/productCatalogue',productCatalogue);
 //----------------------
 //Deploy Routers here
 //----------------------

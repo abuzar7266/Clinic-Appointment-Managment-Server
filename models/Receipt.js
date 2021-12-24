@@ -38,11 +38,20 @@ var Receipt = new Schema({
     TotalAmount:{
         type:Number
     },
+    Paid:{
+        type:Number
+    },
+    ReturnAmount:{
+        type:Number
+    },
     Days:{
         type:Number
     },
     Quantity:{
         type:Number
+    },
+    ReturnDate:{
+        type:String
     },
     Date:{
         type:Date,
