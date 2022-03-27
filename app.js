@@ -4,17 +4,6 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var session = require('express-session');
-var addProduct = require('./routes/AddProductRouter');
-var updateProduct = require('./routes/UpdateProductRouter');
-var removeProduct = require('./routes/RemoveProductRouter');
-var bookProduct = require('./routes/BookProductRouter');
-var launchComplaint = require('./routes/LaunchComplaintRouter');
-var viewComplaint = require('./routes/ViewComplaintRouter');
-var makePayment = require('./routes/makePaymentRouter');
-var rentProduct = require('./routes/RentProductRouter');
-var returnProduct = require('./routes/ReturnProduct');
-var productCatalogue = require('./routes/BrowseCatalogueRouter');
-var sessionRouter = require('./routes/SessionRouter');
 var mongoose = require('mongoose');
 
 
@@ -23,7 +12,7 @@ const MongoDbStore = require('connect-mongo');
 var app = express();
 
 
-const dbString = 'mongodb+srv://rentSystem:rentSystem@cluster0.wtdg1.mongodb.net/myFirstDatabase?retryWrites=true&w=majority###123';
+const dbString = 'mongodb+srv://abuzar:12345@clinicappointment.sj3w7.mongodb.net/myFirstDatabase?retryWrites=true&w=majority';
 mongoose.connect(dbString,{
     autoIndex: false
 })
@@ -56,17 +45,6 @@ app.use(
       }
   })
 );
-app.use('/',sessionRouter);
-app.use('/addProduct',addProduct);
-app.use('/updateProduct',updateProduct);
-app.use('/removeProduct',removeProduct);
-app.use('/bookProduct',bookProduct);
-app.use('/launchComplaint',launchComplaint);
-app.use('/viewComplaint',viewComplaint);
-app.use('/makePayment',makePayment);
-app.use('/rentProduct',rentProduct);
-app.use('/returnProduct',returnProduct);
-app.use('/productCatalogue',productCatalogue);
 //----------------------
 //Deploy Routers here
 //----------------------
